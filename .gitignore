@@ -2,3 +2,4 @@ bin/
 .cache/
 *.exe
 *.pdb
+*.def
