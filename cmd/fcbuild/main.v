@@ -98,6 +98,9 @@ fn run_qa(args []string) int {
 		for item in report.failures {
 			failures << '${item.rel} has ${item.lines} lines'
 		}
+		for item in scan_source_line_caps(target, 600) {
+			failures << item
+		}
 	}
 	if failures.len > 0 {
 		eprintln('qa failed:')
@@ -209,6 +212,65 @@ fn load_answers(path string) !map[string]string {
 	return json.decode(map[string]string, raw)!
 }
 
+fn scan_source_line_caps(root string, limit int) []string {
+	mut failures := []string{}
+	for path in collect_source_files(root) {
+		line_count := os.read_file(path) or { '' }.split_into_lines().len
+		if line_count > limit {
+			failures << '${relative_path(root, path)} has ${line_count} lines'
+		}
+	}
+	return failures
+}
+
+fn collect_source_files(root string) []string {
+	mut files := []string{}
+	collect_source_files_into(root, mut files)
+	files.sort()
+	return files
+}
+
+fn collect_source_files_into(dir string, mut files []string) {
+	for name in os.ls(dir) or { []string{} } {
+		path := os.join_path(dir, name)
+		if os.is_dir(path) {
+			if should_skip_dir(name) {
+				continue
+			}
+			collect_source_files_into(path, mut files)
+		} else if is_source_file(name) {
+			files << path
+		}
+	}
+}
+
+fn should_skip_dir(name string) bool {
+	clean := name.to_lower()
+	if clean.starts_with('.edge-qa') || clean.starts_with('.chrome-qa') {
+		return true
+	}
+	return clean in ['.git', '.cache', 'bin', 'build', 'dist', 'evidence', 'node_modules', 'out',
+		'tmp']
+}
+
+fn is_source_file(name string) bool {
+	lower := name.to_lower()
+	return lower.ends_with('.v') || lower.ends_with('.vue') || lower.ends_with('.js')
+		|| lower.ends_with('.css') || lower.ends_with('.html') || lower.ends_with('.md')
+		|| lower.ends_with('.json') || lower.ends_with('.toml') || lower.ends_with('.webmanifest')
+		|| lower.ends_with('.txt') || lower.ends_with('.mjs') || lower.ends_with('.ps1')
+}
+
+fn relative_path(root string, path string) string {
+	root_clean := os.real_path(root).replace('\\', '/').trim_right('/')
+	path_clean := os.real_path(path).replace('\\', '/')
+	prefix := root_clean + '/'
+	if path_clean.starts_with(prefix) {
+		return path_clean[prefix.len..]
+	}
+	return path_clean
+}
+
 fn write_text(path string, content string) ! {
 	os.mkdir_all(os.dir(path))!
 	os.write_file(path, content)!
@@ -241,7 +303,7 @@ fn cache_for(rel string) string {
 
 fn security_headers() http_core.LocalSecurityHeaders {
 	return http_core.LocalSecurityHeaders{
-		content_security_policy: "default-src 'self' https://unpkg.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self'; img-src 'self' data:; font-src 'self' data:"
+		content_security_policy: "default-src 'self' https://unpkg.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self'; img-src 'self' data:; font-src 'self' data:"
 	}
 }
 
