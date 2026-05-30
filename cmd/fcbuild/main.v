@@ -73,10 +73,15 @@ fn run_generate(args []string) int {
 	}
 	write_text(os.join_path(worth_it, 'application', 'future_caribbean.answers.generated.json'),
 		json.encode_pretty(core.default_answers())) or { return fail(err.msg()) }
-	assets := ['Vue3 CDN + SFC demo', 'Vlang coordination core', 'Submission dry-run',
-		'Evidence pack']
-	report := core.readiness_report('0.8.0', assets, ['Applicant identity', 'Loom video',
-		'External deployment URL'])
+	assets := [
+		'Public Vue3 T0 cockpit',
+		'Vlang coordination core',
+		'Visible agent trace',
+		'Paid-pilot deal room',
+		'Submission dry-run',
+		'Evidence pack',
+	]
+	report := core.readiness_report('1.0.0', assets, ['Loom video', 'Final submit consent'])
 	write_text(os.join_path(worth_it, 'evidence', 'readiness_report.json'),
 		json.encode_pretty(report)) or { return fail(err.msg()) }
 	println('generated site data, application answers and evidence pack')
@@ -195,7 +200,7 @@ fn run_profile_sync(args []string) int {
 	answers['team_members_roles'] = ''
 	answers['current_role'] = 'Founder / software engineering leader / full-stack architect'
 	answers['secondary_skillsets'] = 'AI workflows, architecture, full-stack delivery, cloud platforms, integrations, automation, technical debt, security practices'
-	answers['tech_stack'] = 'Vlang product CLI, Vue3 CDN + SFC + UnoCSS demo, GitHub Pages, automation/evidence pipelines, cloud/AI integration experience and public/synthetic datasets.'
+	answers['tech_stack'] = 'Vlang product CLI and coordination core, Vue3 CDN + SFC + UnoCSS T0 cockpit, GitHub Pages, automation/evidence pipelines, OpenClaw-compatible workflow concepts, cloud/AI integration experience and public/synthetic datasets.'
 	answers['hours_per_week'] = '20-30 hours'
 	answers['loom_video_link'] = 'REPLACE_WITH_LOOM_VIDEO_URL'
 	write_text(out_path, json.encode_pretty(answers)) or { return fail(err.msg()) }
