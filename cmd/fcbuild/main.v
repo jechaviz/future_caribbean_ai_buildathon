@@ -29,6 +29,9 @@ fn main() {
 		'form' {
 			run_form(args[1..])
 		}
+		'profile-sync' {
+			run_profile_sync(args[1..])
+		}
 		'serve' {
 			run_serve(args[1..])
 		}
@@ -171,6 +174,35 @@ fn run_form(args []string) int {
 	return if response.status_code >= 200 && response.status_code < 300 { 0 } else { 4 }
 }
 
+fn run_profile_sync(args []string) int {
+	worth_it := flag_value(args, '--worth-it', default_worth_it)
+	profile_path := flag_value(args, '--profile', 'C:/git/customers/yo/profile/jecha_profile.yml')
+	out_path := flag_value(args, '--out', os.join_path(worth_it, 'application',
+		'future_caribbean.answers.local.json'))
+	profile := os.read_file(profile_path) or { return fail(err.msg()) }
+	mut answers := core.default_answers()
+	answers['full_name'] = profile_value(profile, 'display_name', answers['full_name'])
+	answers['preferred_name'] = answers['full_name']
+	answers['email'] = profile_value(profile, 'email_primary', answers['email'])
+	answers['phone'] = profile_value(profile, 'phone_primary_e164', answers['phone'])
+	answers['whatsapp'] = answers['phone']
+	answers['country'] = country_name(profile_value(profile, 'country', answers['country']))
+	answers['nationality'] = 'Mexican'
+	answers['github'] = profile_value(profile, 'github', answers['github'])
+	answers['linkedin'] = profile_value(profile, 'linkedin', answers['linkedin'])
+	answers['twitter'] = ''
+	answers['discord_username'] = ''
+	answers['team_members_roles'] = ''
+	answers['current_role'] = 'Founder / software engineering leader / full-stack architect'
+	answers['secondary_skillsets'] = 'AI workflows, architecture, full-stack delivery, cloud platforms, integrations, automation, technical debt, security practices'
+	answers['tech_stack'] = 'Vlang product CLI, Vue3 CDN + SFC + UnoCSS demo, GitHub Pages, automation/evidence pipelines, cloud/AI integration experience and public/synthetic datasets.'
+	answers['hours_per_week'] = '20-30 hours'
+	answers['loom_video_link'] = 'REPLACE_WITH_LOOM_VIDEO_URL'
+	write_text(out_path, json.encode_pretty(answers)) or { return fail(err.msg()) }
+	println('profile-synced application answers to ${out_path}')
+	return 0
+}
+
 fn run_serve(args []string) int {
 	site := flag_value(args, '--site', default_site)
 	port := flag_value(args, '--port', default_port.str()).int()
@@ -210,6 +242,24 @@ fn (handler StaticHandler) handle(req http.Request) http.Response {
 fn load_answers(path string) !map[string]string {
 	raw := os.read_file(path)!
 	return json.decode(map[string]string, raw)!
+}
+
+fn profile_value(profile string, key string, fallback string) string {
+	prefix := key + ':'
+	for line in profile.split_into_lines() {
+		clean := line.trim_space()
+		if clean.starts_with(prefix) {
+			return clean[prefix.len..].trim_space().trim('"')
+		}
+	}
+	return fallback
+}
+
+fn country_name(code string) string {
+	if code.to_upper() == 'MX' {
+		return 'Mexico'
+	}
+	return code
 }
 
 fn scan_source_line_caps(root string, limit int) []string {
@@ -313,6 +363,6 @@ fn fail(message string) int {
 }
 
 fn print_help() int {
-	println('fcbuild commands: generate | qa | form | serve')
+	println('fcbuild commands: generate | qa | form | profile-sync | serve')
 	return 0
 }
